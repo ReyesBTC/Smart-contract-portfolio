@@ -46,16 +46,55 @@ function addRewardToPassport(uint256 passportId, uint256 rewardId, uint256 rewar
 }
 
 //SoulBound Transfer Functions disabled. 
-function transferFrom() public override {
-  revert("Transfer disabled");
-}
+ function safeTransferFrom(
+    address from,
+    address to,
+    uint256 tokenId
+  ) public pure {
+    revert Soulbound("SOULBOUND");
+  }
 
-function safeTransferFrom() public override {
-  revert("Transfer disabled");
-}
+  function safeTransferFrom(
+    address from,
+    address to,
+    uint256 tokenId,
+    bytes calldata data
+  ) public pure {
+    revert Soulbound("SOULBOUND");
+  }
 
-function safeTransferFrom() public override {
-  revert("Transfer disabled");
-}
+  function transferFrom(
+    address from,
+    address to,
+    uint256 tokenId
+  ) public pure {
+    revert Soulbound("SOULBOUND");
+  }
 
+  function approve(
+    address approved,
+    uint256 _tokenId
+  ) public pure {
+    revert Soulbound("SOULBOUND");
+  }
+
+  function setApprovalForAll(
+    address operator,
+    bool allowed
+  ) public pure {
+    revert Soulbound("SOULBOUND");
+  }
+
+  function getApproved(
+    uint256 tokenId
+  ) public pure {
+    revert Soulbound("SOULBOUND");
+  }
+
+  function isApprovedForAll(
+    address owner,
+    address operator
+  ) public pure returns(bool) {
+    return false;
+  }
 }
