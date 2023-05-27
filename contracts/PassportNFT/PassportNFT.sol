@@ -16,7 +16,6 @@ Rewards private _rewards; // Instance of the Rewards contract so we can call fun
 
 //Struct 
 struct Reward {
-  address tokenContract;
   uint256 id;
   uint256 amount;
 }
@@ -40,5 +39,17 @@ function addRewardToPassport(uint256 passportId, uint256 rewardId, uint256 rewar
   _passportRewards[passportId].push(Reward(rewardId, rewardAmount)); // mapping the Add the reward to the passport's list of rewards
     }
 
+//SoulBound Transfer Functions disabled. 
+function transferFrom() public override {
+  revert("Transfer disabled");
+    }
+
+function safeTransferFrom() public override {
+  revert("Transfer disabled");
+    }
+
+function safeTransferFrom() public override {
+  revert("Transfer disabled");
+    }
 
 }
