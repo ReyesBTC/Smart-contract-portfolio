@@ -8,6 +8,7 @@ pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/Counters.sol";
 import "./Rewards.sol";
 
 contract PassportNFT is ERC721, Ownable {
@@ -15,41 +16,46 @@ contract PassportNFT is ERC721, Ownable {
 Rewards private _rewards; // Instance of the Rewards contract so we can call functions from there. 
 
 //Struct 
-struct Reward {
-  uint256 id;
-  uint256 amount;
-}
+// struct Reward {
+//   uint256 id;
+//   uint256 amount;
+// }
+
+using Counters for Counters.Counter;
+Counters.Counter private _tokenIds;
 
 //Mappings 
 mapping(address => uint256) public ownerOfPassport;
-mapping(uint256 => Reward[]) private passportRewards; //array of rewards struct. 
+mapping(uint256 => uint256[]) private passportRewards; //array of rewards struct. 
 
 constructor(address rewardsAddress) ERC721("PassportNFT", "PSPT"){
-  _rewards = Rewards(rewardsAddress);  // Create instant for the Rewards contract.
-  }
+  _rewards = Rewards(rewardsAddress);  // Create instant for the Rewards contract look up how to get that address in there. 
+  _tokenIds.increment();
+}
 
 function safeMint(address to, uint256 tokenId) public onlyOwner {
-        _safeMint(to, tokenId);
-        ownerOfPassport[to] = tokenId;
-    }
+  _safeMint(to, tokenId);
+  tokenId = _tokenIds.current();
+  ownerOfPassport[to] = tokenId;
+  _tokenIds.increment();
+}
 
 function addRewardToPassport(uint256 passportId, uint256 rewardId, uint256 rewardAmount) external onlyOwner {
   _rewards.mint(msg.sender, rewardId, rewardAmount, ""); // Mint the reward in the Rewards contract
-
-  _passportRewards[passportId].push(Reward(rewardId, rewardAmount)); // mapping the Add the reward to the passport's list of rewards
-    }
+  passportRewards[passportId].push(rewardId, rewardAmount); // mapping the Add the reward to the passport's list of rewards
+}
 
 //SoulBound Transfer Functions disabled. 
 function transferFrom() public override {
   revert("Transfer disabled");
-    }
+}
 
 function safeTransferFrom() public override {
   revert("Transfer disabled");
-    }
+}
 
 function safeTransferFrom() public override {
   revert("Transfer disabled");
-    }
+}
 
 }
