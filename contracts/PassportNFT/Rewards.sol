@@ -10,7 +10,12 @@ contract Rewards is ERC1155, Ownable {
 using Counters for Counters.Counter;
 Counters.Counter private _tokenIds;
 
-function mint(address account, uint256 id, uint256 amount, bytes memory data) public onlyOwner //how to I make it callable from other function.
+modifier PassportNFTAddress(parameter1, parameter2, ...) {
+    require(msg.sender == PassportNFT.sol, "Permission Denied"); //how to get this address when diployed?
+    _;  
+}
+
+function mint(address account, uint256 id, uint256 amount, bytes memory data) public PassportNFTAddress //how to I make it callable from other function.
 {
   _mint(account, id, amount, data);
 }

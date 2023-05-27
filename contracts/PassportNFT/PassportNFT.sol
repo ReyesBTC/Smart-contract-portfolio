@@ -45,6 +45,10 @@ function addRewardToPassport(uint256 passportId, uint256 rewardId, uint256 rewar
   passportRewards[passportId].push(rewardId, rewardAmount); // mapping the Add the reward to the passport's list of rewards
 }
 
+function getRewards(uint256 _passportId) public view returns(uint256[]) {
+  return passportRewards[_passportId];
+}
+
 //SoulBound Transfer Functions disabled. 
  function safeTransferFrom(
     address from,
