@@ -7,6 +7,8 @@ pragma solidity ^0.8.9;
 /// @dev sould bound nft as ERC-721 w/ ERC-1155 rewards.
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
+import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "./Rewards.sol";
@@ -14,12 +16,6 @@ import "./Rewards.sol";
 contract PassportNFT is ERC721, Ownable {
 
 Rewards private _rewards; // Instance of the Rewards contract so we can call functions from there. 
-
-//Struct 
-// struct Reward {
-//   uint256 id;
-//   uint256 amount;
-// }
 
 using Counters for Counters.Counter;
 Counters.Counter private _tokenIds;
@@ -30,75 +26,60 @@ mapping(uint256 => uint256[]) private passportRewards; //array of rewards struct
 
 constructor(address rewardsAddress) ERC721("PassportNFT", "PSPT"){
   _rewards = Rewards(rewardsAddress);  // Create instant for the Rewards contract look up how to get that address in there. 
-  _tokenIds.increment();
+  address owner = msg.sender; 
 }
 
-function safeMint(address to, uint256 tokenId) public onlyOwner {
+function safeMint(address to) public onlyOwner {
+  uint256 tokenId = _tokenIds.current(); 
   _safeMint(to, tokenId);
-  tokenId = _tokenIds.current();
   ownerOfPassport[to] = tokenId;
   _tokenIds.increment();
 }
 
-function addRewardToPassport(uint256 passportId, uint256 rewardId, uint256 rewardAmount) external onlyOwner {
-  _rewards.mint(msg.sender, rewardId, rewardAmount, ""); // Mint the reward in the Rewards contract
-  passportRewards[passportId].push(rewardId, rewardAmount); // mapping the Add the reward to the passport's list of rewards
-}
-
-function getRewards(uint256 _passportId) public view returns(uint256[]) {
+function getRewards(uint256 _passportId) public view returns(uint256[] memory) {
   return passportRewards[_passportId];
 }
 
+function onERC1155Received(address operator, address from, uint256 id, uint256 value, bytes memory data) public returns(bytes4) {
+    require(from == address(_rewards), "Only accept rewards from Rewards contract"); // Only accept tokens from the Rewards contract
+    uint256 passportId = abi.decode(data, (uint256)); // Decode the data to get the passport ID
+    passportRewards[passportId].push(id); // Map the reward token to the passport
+    return this.onERC1155Received.selector; // Return the function selector as per the ERC1155 standard
+}
+
+function onERC1155BatchReceived(address operator, address from, uint256[] calldata ids, uint256[] calldata values, bytes calldata data) 
+    public virtual override returns(bytes4) {
+    revert("Not supported");
+    }
+
+
+
 //SoulBound Transfer Functions disabled. 
- function safeTransferFrom(
-    address from,
-    address to,
-    uint256 tokenId
-  ) public pure {
-    revert Soulbound("SOULBOUND");
+ function safeTransferFrom(address from, address to, uint256 tokenId) public pure override { 
+    revert("SOULBOUND");
   }
 
-  function safeTransferFrom(
-    address from,
-    address to,
-    uint256 tokenId,
-    bytes calldata data
-  ) public pure {
-    revert Soulbound("SOULBOUND");
+  function safeTransferFrom(address from, address to, uint256 tokenId, bytes memory data) public pure override {
+    revert("SOULBOUND");
   }
 
-  function transferFrom(
-    address from,
-    address to,
-    uint256 tokenId
-  ) public pure {
-    revert Soulbound("SOULBOUND");
+  function transferFrom(address from, address to, uint256 tokenId) public pure override {
+    revert("SOULBOUND");
   }
 
-  function approve(
-    address approved,
-    uint256 _tokenId
-  ) public pure {
-    revert Soulbound("SOULBOUND");
+  function approve(address approved, uint256 _tokenId) public pure override {
+    revert("SOULBOUND");
   }
 
-  function setApprovalForAll(
-    address operator,
-    bool allowed
-  ) public pure {
-    revert Soulbound("SOULBOUND");
+  function setApprovalForAll(address operator, bool allowed) public pure override {
+    revert("SOULBOUND");
   }
 
-  function getApproved(
-    uint256 tokenId
-  ) public pure {
-    revert Soulbound("SOULBOUND");
+  function getApproved(uint256 tokenId) public view virtual override returns (address) {
+    revert("SOULBOUND");
   }
 
-  function isApprovedForAll(
-    address owner,
-    address operator
-  ) public pure returns(bool) {
+  function isApprovedForAll(address owner,address operator) public pure override returns(bool) {
     return false;
   }
 }
