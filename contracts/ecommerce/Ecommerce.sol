@@ -8,6 +8,7 @@ contract Ecommerce is ERC721 {
   using Counters for Counters.Counter;
   //Counters is a library. Counter is the struct inside the libreary. this is a library function.
   Counters.Counter private _productId;
+  address owner;
   //this makes that datatype into a variable. 
 
   struct Product {
@@ -53,7 +54,9 @@ contract Ecommerce is ERC721 {
 
 // In Solidity, the indexed keyword is used in the declaration of an event. Up to three parameters can be marked as indexed. Indexed parameters are a special kind of parameter which will not be stored in the data part of the log, but in the topics array, making it possible to filter for specific parameters more efficiently.
 
-constructor() ERC721("Ecommerse", "ECE") { owner = msg.sender; } // initialize ERC721 token with name and symbol
+constructor() ERC721("Ecommerse", "ECE") { 
+  owner = msg.sender;
+} // initialize ERC721owner token with name and symbol
 
 //Given Parameters 
 // registerSeller [DONE] -
@@ -80,8 +83,9 @@ function registerSeller(SellerProfile memory _sellerInfo) public {
     sellerId: payable(msg.sender),
     active: _sellerInfo.active,
     age: _sellerInfo.age,
-    joined: _sellerInfo.joined
-    //sellerProductList: new uint256[](0) // and this has to be a dynamic array so it cant be initialized inside a funciton. 
+    joined: _sellerInfo.joined,
+    sellerProductList: new uint256[](0) 
+    // and this has to be a dynamic array so it cant be initialized inside a funciton. 
     // Empty array w/ no products to push (Learn to initialize an empty array) but isnt an array inside a function only exist in memory? so how is it added to the state variable mapping thats storage?. Default is en empty array so ill leave it out and let it initialize as default. 
   });
    //SellerRegistry[msg.sender] =
@@ -107,12 +111,11 @@ function listProductRegistered(Product memory _newProduct) public payable {
   require(SellerRegistry[msg.sender].active, "Seller not registered" );
     _productId.increment();
     uint256 productID = _productId.current();
-
     uint256 fee = _newProduct.price * registeredSellerFee / 100;
     require(msg.value >= fee, "Insufficient funds");
     // it statment based on requires. to make sure it fails and returns "Insufficient funds"
     //event emitting that fee was paid for accounting purposes. 
-    owner.transfer(msg.value);
+    payable(owner).transfer(fee);
     // Figure out logic to handle that Ether, such as transferring it to another address or storing it in the contract.
 
     emit FeePaid(msg.sender, fee);
@@ -148,7 +151,7 @@ function listProductUnRegistered(Product memory _newProduct) public payable {
    uint256 fee = _newProduct.price * unregisteredSellerFee / 100;
    require(msg.value >= fee, "Insufficient funds");
    emit FeePaid(msg.sender, fee);
-    owner.transfer(msg.value);
+    payable(owner).transfer(fee);
    // <address payable>.transfer(uint256 amount)
     //send given amount of Wei to Address, reverts on failure, forwards 2300 gas stipend, not adjustable
    // Figure out logic to handle that Ether, such as transferring it to another address or storing it in the contract.
@@ -220,23 +223,48 @@ function getIfForSale(uint256 _productID) public view returns(string memory) {
         emit ProductSold(_productID, _product.seller, msg.sender, _product.price); // emit event
     }
 
-  function getAllProductsForSale() public view returns(Product[] memory) {
-  uint256 productCount = 0;
-  uint256[] productForSale;
+  // function getAllProductsForSale() public view returns(Product[] memory) {
+  // uint256 productCount = 0;
+  // uint256[] calldata productForSale;
+  // // First count how many products are for sale
+  // for (uint i = 0; i < allProductIDs.length; i++) {
+  //   //if (ProductIdtoProduct[allProductIDs[i]].forSale) {
+  //   //if the .forsale == true we add 1 to the counter. 
+  //   uint256 productID = allProductIDs[i];
+  //   Product memory product = ProductIdtoProduct[productID];
+  //   if(product.forSale) {
+  //     productForSale.push(product);
+  //   }
+  //     }
+  //     //productCount++;
+  //   }
 
-  // First count how many products are for sale
-  for (uint i = 0; i < allProductIDs.length; i++) {
-    //if (ProductIdtoProduct[allProductIDs[i]].forSale) {
-    //if the .forsale == true we add 1 to the counter. 
-    uint256 productID = allProdictID[i];
-    Product memory product = ProductIdtoProduct[productID];
-    if(product.forsale) {
-      productForSale.push(product);
+    function getAllProductsForSale() public view returns (Product[] memory) {
+    uint256[] memory productForSale = new uint256[](allProductIDs.length);
+    uint256 productCount = 0;
+
+    // Collect the product IDs for sale
+    for (uint256 i = 0; i < allProductIDs.length; i++) {
+        uint256 productID = allProductIDs[i];
+        if (ProductIdtoProduct[productID].forSale) {
+            productForSale[productCount] = productID;
+            productCount++;
+        }
     }
-      }
-      //productCount++;
+
+    // Create a new dynamic array of type Product
+    Product[] memory products = new Product[](productCount);
+
+    // Fill the products array with the products for sale
+    for (uint256 i = 0; i < productCount; i++) {
+        uint256 productID = productForSale[i];
+        products[i] = ProductIdtoProduct[productID];
     }
-  }
+
+    return products;
+}
+
+  
 
   //  Product[] memory productsForSale = new Product[](productCount);
   //   uint256 counter = 0;
@@ -249,10 +277,10 @@ function getIfForSale(uint256 _productID) public view returns(string memory) {
   //       counter++;
   //     }
   // }
-    return productForSale;
+    // return productForSale;
 
     //I would actully use the events i created for this to all be done in the front end. but for the sake of learning, its all onchain. Instead of returning the data directly from the function, i would use the emitted events with the necessary data whenever a product is listed or delisted. Off-chain services or front-end interfaces could then listen for these events and update their own databases accordingly.
-}
+// }
 
 
   //Update Listing learn how to update a listing. (Still working on this)

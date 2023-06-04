@@ -20,7 +20,7 @@ modifier onlychairperson() {
 }
 
 modifier onlyWhenPollOpen() {
-  require(electionsOpen, "Elections are not currently open"); //Will require that the Elections are open. 
+  require(electionOpen, "Elections are not currently open"); //Will require that the Elections are open. 
   _;
 }
 
@@ -31,7 +31,7 @@ modifier onlyWhenPollClosed() {
 
 constructor() {
   chairperson = msg.sender;
-  electionsOpen = false;
+  electionOpen = false;
 }
 
 //Mappings 
@@ -43,15 +43,15 @@ mapping(string => bool) private isCandidateNameRegistered; //avoid double regist
   function addCandidate(string memory candidateName, address candidateId) public onlychairperson {
     // require(candidates[candidateId] == candidateName, "Candidate has already been registered");
     require(!isCandidateNameRegistered[candidateName], "This name has already been registered as a candidate.");
-    listOfCandidates.push(CandidateName);
+    listOfCandidates.push(candidateName);
     candidates[candidateId] = candidateName;
     isCandidateNameRegistered[candidateName] = true;
     emit CandidateAdded(candidateId, candidateName);
   }
 
-  function vote(address voteFor) public onlyDuringElections {
-    require(hasvoted[msg.sender] = false, "You have already voted");
-    votes[voteFor] ++,
+  function vote(address voteFor) public onlyWhenPollOpen {
+    require(hasVoted[msg.sender] = false, "You have already voted");
+    votes[voteFor] ++;
   }
 
   function openElection() public onlyWhenPollClosed {
@@ -59,7 +59,7 @@ mapping(string => bool) private isCandidateNameRegistered; //avoid double regist
     electionOpen = true;
   }
 
-  function closeElection() public onlyWhenPollOpen onlyOwner {
+  function closeElection() public onlyWhenPollOpen onlychairperson {
     electionOpen = false;
   }
 
