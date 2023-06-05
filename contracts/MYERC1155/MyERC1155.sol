@@ -10,7 +10,7 @@ contract MyERC1155 is ERC1155, Ownable {
     uint256[] minted = [0, 0, 0]; // Actual supply of each token. 
     uint256[] rates = [.05 ether, .1 ether, .02 ether];  //Pricing for minting the coins. 
 
-    function setURI(string memory newuri) public  {
+    function setURI(string memory newuri) public onlyOner {
         _setURI(newuri);
     }
 

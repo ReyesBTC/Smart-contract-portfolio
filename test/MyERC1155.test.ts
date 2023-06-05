@@ -8,7 +8,8 @@ describe("MyERC1155 contract", function() {
 
   // Before is only ran once, and before each is ran before each it statement. 
 
-  beforeEach(async function() {
+  beforeEach(async function () {
+    [owner, addr1] = await ethers.getSigners();
     MyERC1155 = await ethers.getContractFactory("MyERC1155");
     myERC1155 = await MyERC1155.deploy();
     await myERC1155.deployed();
@@ -16,7 +17,7 @@ describe("MyERC1155 contract", function() {
 
   it("It should Set the new URI correctly", async function () {
     const newUri = "https://example.com/metadata/{id}.json";
-    await myERC1155.connect(ethers.provider.getSigner(0)).setURI(newUri); // we wait, then call the contract, then the function 
+    await myERC1155.connect(ethers.provider.getSigner(owner)).setURI(newUri); // we wait, then call the contract, then the function 
     const uri = await myERC1155.uri(tokenId);
       expect(uri).to.equal(newUri);
   })
