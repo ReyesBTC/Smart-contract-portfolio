@@ -23,12 +23,17 @@ contract MyToken is ERC1155, Ownable {
         _mint(msg.sender, id, amount, ""); // Making sure we only mint to the caller of the function. 
         minted[index] += amount; // Making sure that the market cap is adusted to new ciculating supply. 
 
-        require(msg.value >= amount * rates[index], "Insufficient Funds");
+        require(msg.value >= amount * rates[index], "Insufficient Funds");  
     } 
 
-    function getCirculatingSupply(uint256 tokenId) public view returns(uint256, uint256) {
+       function getCirculatingSupply(uint256 tokenId) public view returns(uint256, uint256) {
         uint256 index = tokenId - 1; 
-        return(supplies[index]); 
+        return (minted[index], supplies[index]);
     }
+
+    function withdraw() public onlyOwner payable{
+        require(address(this).balance > 0, "Balance is 0");
+        payable(owner()).transfer(address(this).balance);
+    } 
 
 }
