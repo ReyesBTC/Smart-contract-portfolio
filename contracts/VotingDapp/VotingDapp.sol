@@ -20,7 +20,7 @@ modifier onlychairperson() {
 }
 
 modifier onlyWhenPollOpen() {
-  require(electionsOpen, "Elections are not currently open"); //Will require that the Elections are open. 
+  require(electionOpen, "Elections are not currently open"); //Will require that the Elections are open. 
   _;
 }
 
@@ -31,21 +31,21 @@ modifier onlyWhenPollClosed() {
 
 constructor() {
   chairperson = msg.sender;
-  electionsOpen = false;
+  electionOpen = false;
 }
 
 //Mappings 
 mapping(address => uint256) public votes; //counts votes per address.
 mapping(address => bool) public hasVoted; //to make sure voters only cast one vote. 
 mapping(address => string) public candidateIdToName; //candidateid to names. 
-mapping(address => string) public candidatesNameToId; //names to id. 
+mapping(string => address ) public candidatesNameToId; //names to id. 
 mapping(string => bool) private isCandidateNameRegistered; //avoid double registration. 
 
   function addCandidate(string memory candidateName, address candidateId) public onlychairperson {
     // require(candidates[candidateId] == candidateName, "Candidate has already been registered");
-    require(bytes(candidates[candidateId]).length == 0, "This address has already been registered as a candidate."); // this uses the default value to make sure that address has not been associated with any string yet. This also Eliminates the double register of the same person twice. 
+    require(bytes(candidateIdToName[candidateId]).length == 0, "This address has already been registered as a candidate."); // this uses the default value to make sure that address has not been associated with any string yet. This also Eliminates the double register of the same person twice. 
     require(!isCandidateNameRegistered[candidateName], "This name has already been registered as a candidate.");
-    listOfCandidates.push(CandidateName);
+    listOfCandidates.push(candidateName);
     candidateIdToName[candidateId] = candidateName;
     candidatesNameToId[candidateName] = candidateId;
     isCandidateNameRegistered[candidateName] = true;
@@ -53,16 +53,15 @@ mapping(string => bool) private isCandidateNameRegistered; //avoid double regist
   }
 
   function getCandidateID(string memory _candidateName) public view returns(address){
-    require(bytes(candidatesNameToId[_candidateName]).length > 0, "This candidate does not exist");
+    require(candidatesNameToId[_candidateName]!= address(0), "This candidate does not exist");
     return candidatesNameToId[_candidateName];
   }
   //maybe learn how to call one function from another and use the returned values as input to the subsequent function.
 
-  function vote(address voteFor) public onlyDuringElections {
-    require(hasvoted[msg.sender] = false, "You have already voted");
-    require([votefor]);
+  function vote(address voteFor) public onlyWhenPollOpen {
+    require(hasVoted[msg.sender] = false, "You have already voted");
     hasVoted[msg.sender] = true;
-    votes[voteFor] ++,
+    votes[voteFor] ++;
   }
 
   function openElection() public onlyWhenPollClosed {
@@ -70,13 +69,13 @@ mapping(string => bool) private isCandidateNameRegistered; //avoid double regist
     electionOpen = true;
   }
 
-  function closeElection() public onlyWhenPollOpen onlyOwner {
+  function closeElection() public onlyWhenPollOpen onlychairperson {
     electionOpen = false;
   }
 
-  function countVotes() public onlyWhenPollOpen {
-    for () 
+  // function countVotes() public onlyWhenPollOpen {
+  //   for () 
 
-  }
+  // }
 
 }

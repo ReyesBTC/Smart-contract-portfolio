@@ -10,6 +10,8 @@ contract Ecommerce is ERC721 {
   Counters.Counter private _productId;
   //this makes that datatype into a variable. 
 
+  address owner;
+
   struct Product {
     string name;
     uint256 productId;
@@ -80,8 +82,8 @@ function registerSeller(SellerProfile memory _sellerInfo) public {
     sellerId: payable(msg.sender),
     active: _sellerInfo.active,
     age: _sellerInfo.age,
-    joined: _sellerInfo.joined
-    //sellerProductList: new uint256[](0) // and this has to be a dynamic array so it cant be initialized inside a funciton. 
+    joined: _sellerInfo.joined,
+    sellerProductList: new uint256[](0) // and this has to be a dynamic array so it cant be initialized inside a funciton. 
     // Empty array w/ no products to push (Learn to initialize an empty array) but isnt an array inside a function only exist in memory? so how is it added to the state variable mapping thats storage?. Default is en empty array so ill leave it out and let it initialize as default. 
   });
    //SellerRegistry[msg.sender] =
@@ -112,7 +114,7 @@ function listProductRegistered(Product memory _newProduct) public payable {
     require(msg.value >= fee, "Insufficient funds");
     // it statment based on requires. to make sure it fails and returns "Insufficient funds"
     //event emitting that fee was paid for accounting purposes. 
-    owner.transfer(msg.value);
+   payable(owner).transfer(msg.value);
     // Figure out logic to handle that Ether, such as transferring it to another address or storing it in the contract.
 
     emit FeePaid(msg.sender, fee);
@@ -148,7 +150,7 @@ function listProductUnRegistered(Product memory _newProduct) public payable {
    uint256 fee = _newProduct.price * unregisteredSellerFee / 100;
    require(msg.value >= fee, "Insufficient funds");
    emit FeePaid(msg.sender, fee);
-    owner.transfer(msg.value);
+    payable(owner).transfer(msg.value);
    // <address payable>.transfer(uint256 amount)
     //send given amount of Wei to Address, reverts on failure, forwards 2300 gas stipend, not adjustable
    // Figure out logic to handle that Ether, such as transferring it to another address or storing it in the contract.
@@ -220,23 +222,22 @@ function getIfForSale(uint256 _productID) public view returns(string memory) {
         emit ProductSold(_productID, _product.seller, msg.sender, _product.price); // emit event
     }
 
-  function getAllProductsForSale() public view returns(Product[] memory) {
-  uint256 productCount = 0;
-  uint256[] productForSale;
+  // function getAllProductsForSale() public view returns(Product[] memory) {
+  // uint256 productCount = 0;
+  // uint256[] productForSale;
 
-  // First count how many products are for sale
-  for (uint i = 0; i < allProductIDs.length; i++) {
-    //if (ProductIdtoProduct[allProductIDs[i]].forSale) {
-    //if the .forsale == true we add 1 to the counter. 
-    uint256 productID = allProdictID[i];
-    Product memory product = ProductIdtoProduct[productID];
-    if(product.forsale) {
-      productForSale.push(product);
-    }
-      }
-      //productCount++;
-    }
-  }
+  // // First count how many products are for sale
+  // for (uint i = 0; i < allProductIDs.length; i++) {
+  //   //if (ProductIdtoProduct[allProductIDs[i]].forSale) {
+  //   //if the .forsale == true we add 1 to the counter. 
+  //   uint256 productID = allProdictID[i];
+  //   Product memory product = ProductIdtoProduct[productID];
+  //   if(product.forsale) {
+  //     productForSale.push(product);
+  //   }
+  //     }
+  //     //productCount++;
+    
 
   //  Product[] memory productsForSale = new Product[](productCount);
   //   uint256 counter = 0;
@@ -249,11 +250,9 @@ function getIfForSale(uint256 _productID) public view returns(string memory) {
   //       counter++;
   //     }
   // }
-    return productForSale;
-
+  //   return productForSale;
+  // }
     //I would actully use the events i created for this to all be done in the front end. but for the sake of learning, its all onchain. Instead of returning the data directly from the function, i would use the emitted events with the necessary data whenever a product is listed or delisted. Off-chain services or front-end interfaces could then listen for these events and update their own databases accordingly.
-}
-
 
   //Update Listing learn how to update a listing. (Still working on this)
     function upDateListing(Product memory _updatedInfo, uint256 _productID) public returns(string memory) {

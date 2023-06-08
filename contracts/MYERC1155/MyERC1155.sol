@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.9;
 
-import "@openzeppelin/contracts@4.9.0/token/ERC1155/ERC1155.sol";
-import "@openzeppelin/contracts@4.9.0/access/Ownable.sol";
+import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract MyERC1155 is ERC1155, Ownable {
     constructor() ERC1155("") {}
@@ -10,7 +10,7 @@ contract MyERC1155 is ERC1155, Ownable {
     uint256[] minted = [0, 0, 0]; // Actual supply of each token. 
     uint256[] rates = [.05 ether, .1 ether, .02 ether];  //Pricing for minting the coins. 
 
-    function setURI(string memory newuri) public onlyOner {
+    function setURI(string memory newuri) public onlyOwner {
         _setURI(newuri);
     }
 
