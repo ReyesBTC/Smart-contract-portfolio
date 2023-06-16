@@ -95,6 +95,7 @@ mapping(string => bool) private isCandidateNameRegistered; //avoid double regist
   }
 
 
+<<<<<<< Updated upstream
 //Need to figure out how to count the votes 
   // function countVotes() public onlyWhenPollOpen {
   //   for () 
@@ -102,3 +103,5 @@ mapping(string => bool) private isCandidateNameRegistered; //avoid double regist
   // }
 
 }
+=======
+>>>>>>> Stashed changes
