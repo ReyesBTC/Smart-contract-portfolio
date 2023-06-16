@@ -249,7 +249,10 @@ function getIfForSale(uint256 _productID) public view returns(string memory) {
   //       counter++;
   //     }
   // }
+<<<<<<< Updated upstream
     // return productForSale;
+=======
+>>>>>>> Stashed changes
 
     //I would actully use the events i created for this to all be done in the front end. but for the sake of learning, its all onchain. Instead of returning the data directly from the function, i would use the emitted events with the necessary data whenever a product is listed or delisted. Off-chain services or front-end interfaces could then listen for these events and update their own databases accordingly.
 
