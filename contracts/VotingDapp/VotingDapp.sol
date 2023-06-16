@@ -93,15 +93,5 @@ mapping(string => bool) private isCandidateNameRegistered; //avoid double regist
     require(highestVoteCount > 0, "No votes cast");
     return winner;
   }
-
-
-<<<<<<< Updated upstream
-//Need to figure out how to count the votes 
-  // function countVotes() public onlyWhenPollOpen {
-  //   for () 
-
-  // }
-
 }
-=======
->>>>>>> Stashed changes
+
