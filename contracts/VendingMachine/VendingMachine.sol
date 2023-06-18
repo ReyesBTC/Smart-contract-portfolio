@@ -30,5 +30,5 @@ sodaBalances[address(this)] -= _amount;
 sodaBalances[msg.sender] += _amount; 
 }
 
-//Using the address(this) Balance to keep a supply limit is a great way to control the issuence of a coin. but an even better one would be to make an array with "maxSupply" to keep track of the market capp of a given coin. )
+//Using the address(this) Balance to keep a supply limit is a great way to control the issuence of a coin. But an even better one would be to make an array with "maxSupply" to keep track of the market cap of a given coin as well)
 }
