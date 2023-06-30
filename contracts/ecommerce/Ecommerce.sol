@@ -30,6 +30,9 @@ contract Ecommerce is ERC721 {
    uint256[] sellerProductList; // Store productIds instead of Product structs. Then I can call the Product type Struct with productID and return that. 
   }
 
+  // Variables 
+  address public ownerOf;
+
   mapping(address => SellerProfile) public SellerRegistry;
   mapping(uint256 => SellerProfile) public ProductIdToSellerProfile;
   mapping(uint256 => Product) public ProductIdtoProduct;
@@ -49,11 +52,10 @@ contract Ecommerce is ERC721 {
   event ProductUpdated(uint256 indexed productid, address indexed seller, string name, uint256 price, bool forSale, string description, string image, string thumbnail);
   event SellerRegistered(address indexed seller, string userName, uint16 age, uint256 joined);
   event FeePaid(address indexed seller, uint256 fee);
-  // Each argument represents a piece of data that will be included when the event is emitted. These arguments can be of any type that's valid in Solidity, including custom types like structs.
 
 // In Solidity, the indexed keyword is used in the declaration of an event. Up to three parameters can be marked as indexed. Indexed parameters are a special kind of parameter which will not be stored in the data part of the log, but in the topics array, making it possible to filter for specific parameters more efficiently.
 
-constructor() ERC721("Ecommerse", "ECE") { owner = msg.sender; } // initialize ERC721 token with name and symbol
+constructor() ERC721("Ecommerse", "ECE") { ownerOf = msg.sender; } // initialize ERC721 token with name and symbol
 
 //Given Parameters 
 // registerSeller [DONE] -
@@ -69,23 +71,28 @@ constructor() ERC721("Ecommerse", "ECE") { owner = msg.sender; } // initialize E
 // purchaseProduct  [DONE](ERC721)
 // upDateListing    [DONE]
 
+
+function withdraw() public payable {
+    require(msg.sender == ownerOf, "Only the contract owner can withdraw funds");
+    payable(ownerOf).transfer(address(this).balance);
+}
+
 function registerSeller(SellerProfile memory _sellerInfo) public {
-  require(!SellerRegistry[msg.sender].active, "Already registered");
+    //require to be 18 years old. 
+    require(_sellerInfo.age >= 18, "Must be 18 years or older");
+    //require to be registered.
+    require(!SellerRegistry[msg.sender].active, "Seller already registered");  
 
-  // uint256[] storage emptyProductArray = new uint256[](0);
-  // you cant copy a memory so it has to be storage array of struct Product to a storage location, which is currently not supported in Solidity. See if I can put this directly into the sellerProductList.
-
-  SellerRegistry[msg.sender] = SellerProfile({
-    userName:  _sellerInfo.userName,
-    sellerId: payable(msg.sender),
-    active: _sellerInfo.active,
-    age: _sellerInfo.age,
-    joined: _sellerInfo.joined
-    //sellerProductList: new uint256[](0) // and this has to be a dynamic array so it cant be initialized inside a funciton. 
-    // Empty array w/ no products to push (Learn to initialize an empty array) but isnt an array inside a function only exist in memory? so how is it added to the state variable mapping thats storage?. Default is en empty array so ill leave it out and let it initialize as default. 
-  });
-   //SellerRegistry[msg.sender] =
-  emit SellerRegistered(msg.sender, _sellerInfo.userName, _sellerInfo.age, _sellerInfo.joined);
+    SellerRegistry[msg.sender] = SellerProfile({
+      userName: _sellerInfo.userName,
+      sellerId: payable (msg.sender), //payable so we can send money to the seller. 
+      age: _sellerInfo.age,
+      joined: block.timestamp,
+      active: true,
+      sellerProductList: _sellerInfo.sellerProductList
+    });
+    //emit event to show that seller was registered.
+  emit SellerRegistered(msg.sender, _sellerInfo.userName, _sellerInfo.age, block.timestamp);
 }
 
 function getSellerInfo(address _sellerAddress) public view returns (SellerProfile memory) {
@@ -112,7 +119,7 @@ function listProductRegistered(Product memory _newProduct) public payable {
     require(msg.value >= fee, "Insufficient funds");
     // it statment based on requires. to make sure it fails and returns "Insufficient funds"
     //event emitting that fee was paid for accounting purposes. 
-    owner.transfer(msg.value);
+    payable(address(this)).transfer(fee);
     // Figure out logic to handle that Ether, such as transferring it to another address or storing it in the contract.
 
     emit FeePaid(msg.sender, fee);
@@ -137,8 +144,7 @@ function listProductRegistered(Product memory _newProduct) public payable {
     _seller.sellerProductList.push(productID); // pushing productID into sellerProfile struct. (thats why it has to be storage for this variable.)
     _mint(msg.sender, productID); // mint new token for product and assining the seller(msg.sender) as owner. 
     emit ProductListed(productID, msg.sender, _newProduct.price); // emit
-    allProductIDs.push(productID); // After creating a new product, add its ID to the array of all product IDs
-
+    allProductIDs.push(productID); // After creating a new product, add its ID to the array of all product IDsert
 }
 
 function listProductUnRegistered(Product memory _newProduct) public payable {
@@ -148,7 +154,7 @@ function listProductUnRegistered(Product memory _newProduct) public payable {
    uint256 fee = _newProduct.price * unregisteredSellerFee / 100;
    require(msg.value >= fee, "Insufficient funds");
    emit FeePaid(msg.sender, fee);
-    owner.transfer(msg.value);
+    payable(address(this)).transfer(fee);
    // <address payable>.transfer(uint256 amount)
     //send given amount of Wei to Address, reverts on failure, forwards 2300 gas stipend, not adjustable
    // Figure out logic to handle that Ether, such as transferring it to another address or storing it in the contract.
@@ -190,88 +196,114 @@ function getOwnerOfProduct(uint256 _productID) public view returns(address) {
 }
 
 function removeListing(uint256 _productID) public {
-  require(ProductIdtoProduct[_productID].seller != address(0), "Product does not exist"); //checks to see if the struct returned is a default value. 
-  require(ProductIdtoProduct[_productID].seller == msg.sender, "Not the seller"); // Only the seller/owner can 'removelisting' . 
-  require(ProductIdtoProduct[_productID].forSale, "Already not for sale"); //
+    // Check if the product exists
+    require(ProductIdtoProduct[_productID].seller != address(0), "Product does not exist"); 
+    // Check if the function caller is the seller of the product
+    require(ProductIdtoProduct[_productID].seller == msg.sender, "Not the seller"); 
+    // Check if the product is currently for sale
+    require(ProductIdtoProduct[_productID].forSale, "Already not for sale"); 
 
-   ProductIdtoProduct[_productID].forSale = false; 
-    //TESTING return a boolean that is False. 
-  emit ProductDelisted(_productID, msg.sender); // Emit the event
-    //Check fenction for expected results. 
-}
+    // Set the product's forSale status to false
+    ProductIdtoProduct[_productID].forSale = false; 
+
+    // Loop through the allProductIDs array to find the product to remove
+    for (uint256 i = 0; i < allProductIDs.length; i++) {
+        // If the product is found
+        if (allProductIDs[i] == _productID) {
+            // Replace it with the last element in the array
+            allProductIDs[i] = allProductIDs[allProductIDs.length - 1];
+            //allProductIDs.length - 1 is the index of the last element in the array. In programming, array indices start at 0, so an array with n elements has indices ranging from 0 to n - 1.
+            // Remove the last element from the array
+            allProductIDs.pop();
+            // Exit the loop
+            break;
+        }
+    }
+
+    // Emit an event to indicate that the product has been delisted
+    emit ProductDelisted(_productID, msg.sender); 
+  }
 
 // Function to remove from platform altogether. 
 
-function getIfForSale(uint256 _productID) public view returns(string memory) {
+function getIfForSale(uint256 _productID) public view returns(bool) {
   require(ProductIdtoProduct[_productID].seller != address(0), "Product does not exist"); //checks to see if the struct returned is a default value. 
-  require(ProductIdtoProduct[_productID].forSale, "Not for sale");
+  return ProductIdtoProduct[_productID].forSale;
     //TESTING return a boolean that is True for the input. 
-  return "Yes";
 }
 
- // Buy an item
-    function purchaseProduct(uint256 _productID) public payable {
-      require(ProductIdtoProduct[_productID].seller != address(0), "Product does not exist"); //checks to see if the struct returned is a default value. 
-      require(ProductIdtoProduct[_productID].forSale, "Not for Sale");
-        Product memory _product = ProductIdtoProduct[_productID]; // get item
-      require(msg.value >= _product.price, "Not enough funds sent"); // require enough ether sent to contract. 
-        _product.seller.transfer(_product.price); // transfer funds to seller.
-        _transfer(_product.seller, msg.sender, _productID); // _transfer ownership of the token LOOK up ERC721 _transfer(address from, address to, uint256 tokenId) _transer function. // helper function info on openzzeplin. 
-        emit ProductSold(_productID, _product.seller, msg.sender, _product.price); // emit event
-    }
+// Buy an item
+function purchaseProduct(uint256 _productID) public payable {
+  // Check if the product exists
+  require(ProductIdtoProduct[_productID].seller != address(0), "Product does not exist"); 
+  // Check if the product is for sale
+  require(ProductIdtoProduct[_productID].forSale, "Not for Sale");
+  // Check if the buyer is not the owner of the product
+  require(ProductIdtoProduct[_productID].seller != msg.sender, "Owner cannot buy their own product");
+  // Get the product
+  Product memory _product = ProductIdtoProduct[_productID]; // get item
+  // Check if the buyer sent enough funds
+  require(msg.value >= _product.price, "Not enough funds sent"); 
+  // Transfer funds to the seller
+  _product.seller.transfer(_product.price); 
+  // Transfer ownership of the product
+  _transfer(_product.seller, msg.sender, _productID); 
+  // Emit an event to indicate that the product has been sold
+  emit ProductSold(_productID, _product.seller, msg.sender, _product.price); 
+}
 
-  function getAllProductsForSale() public view returns(Product[] memory) {
-  uint256 productCount = 0;
-  uint256[] productForSale;
 
-  // First count how many products are for sale
-  for (uint i = 0; i < allProductIDs.length; i++) {
-    //if (ProductIdtoProduct[allProductIDs[i]].forSale) {
-    //if the .forsale == true we add 1 to the counter. 
-    uint256 productID = allProdictID[i];
-    Product memory product = ProductIdtoProduct[productID];
-    if(product.forsale) {
-      productForSale.push(product);
+function getAllProductsForSale() public view returns(Product[] memory) {
+  //loop through all products and return only those that are for sale. 
+  Product[] memory forSaleProducts = new Product[](allProductIDs.length); // create a new array to hold all the products that are for sale. 
+  uint256 count = 0;
+  for (uint256 i = 0; i < allProductIDs.length; i++) {
+    if (ProductIdtoProduct[allProductIDs[i]].forSale) {
+      forSaleProducts[count] = ProductIdtoProduct[allProductIDs[i]];
+      count++;
     }
+  }
+  return forSaleProducts;
+}
+
+  function getAllProducts() public view returns(Product[] memory) {
+    //loop through all products and return only those that are for sale. 
+    Product[] memory allProducts = new Product[](allProductIDs.length); // create a new array to hold all the products that are for sale. 
+    uint256 count = 0;
+    for (uint256 i = 0; i < allProductIDs.length; i++) {
+        allProducts[count] = ProductIdtoProduct[allProductIDs[i]];
+        count++;
+    }
+    return allProducts;
+  }
+
+  function getAllProductsForSaleBySeller(address _seller) public view returns(Product[] memory) {
+    //loop through all products and return only those that are for sale. 
+    Product[] memory forSaleProducts = new Product[](SellerRegistry[_seller].sellerProductList.length); // create a new array to hold all the products that are for sale. 
+    uint256 count = 0;
+    for (uint256 i = 0; i < SellerRegistry[_seller].sellerProductList.length; i++) {
+      if (ProductIdtoProduct[SellerRegistry[_seller].sellerProductList[i]].forSale) {
+        forSaleProducts[count] = ProductIdtoProduct[SellerRegistry[_seller].sellerProductList[i]];
+        count++;
       }
-      //productCount++;
     }
-  
-
-  //  Product[] memory productsForSale = new Product[](productCount);
-  //   uint256 counter = 0;
-  //   // creating a varable type arrray in memory inside the function so we can push everything into it and then return it. 
-
-  //    // Then retrieve all products that are for sale
-  //   for (uint i = 0; i < allProductIDs.length; i++) {
-  //     if (ProductIdtoProduct[allProductIDs[i]].forSale) {
-  //       productsForSale[counter] = ProductIdtoProduct[allProductIDs[i]];
-  //       counter++;
-  //     }
-  // }
-<<<<<<< Updated upstream
-    // return productForSale;
-=======
->>>>>>> Stashed changes
-
-    //I would actully use the events i created for this to all be done in the front end. but for the sake of learning, its all onchain. Instead of returning the data directly from the function, i would use the emitted events with the necessary data whenever a product is listed or delisted. Off-chain services or front-end interfaces could then listen for these events and update their own databases accordingly.
-
+    return forSaleProducts;
+  }
 
 
   //Update Listing learn how to update a listing. (Still working on this)
-    function upDateListing(Product memory _updatedInfo, uint256 _productID) public returns(string memory) {
-      require(msg.sender == ProductIdtoProduct[_productID].seller, "Only the seller can update the listing"); // Only allow the seller to update the listing
-     Product storage _product = ProductIdtoProduct[_productID];
+  function upDateListing(Product memory _updatedInfo, uint256 _productID) public returns(string memory) {
+    require(msg.sender == ProductIdtoProduct[_productID].seller, "Only the seller can update the listing"); // Only allow the seller to update the listing
+    Product storage _product = ProductIdtoProduct[_productID];
      //storage because we are updating info that is stored on the blockchain.
- 
-      _product.name = _updatedInfo.name;
-      _product.price = _updatedInfo.price;
-      _product.forSale = _updatedInfo.forSale;
-      _product.description = _updatedInfo.description;
-      _product.image =  _updatedInfo.image;
-      _product.thumbnail =  _updatedInfo.thumbnail;
-      //this should update the old Product struct stored on the block chain with what they inputed in the paramaters and leaves the fields that need to stay the same, the same. 
-      emit ProductUpdated(_productID, msg.sender, _updatedInfo.name, _updatedInfo.price, _updatedInfo.forSale, _updatedInfo.description, _updatedInfo.image, _updatedInfo.thumbnail);
-      return "Listing Updated";
-    }
+    _product.name = _updatedInfo.name;
+    _product.price = _updatedInfo.price;
+    _product.forSale = _updatedInfo.forSale;
+    _product.description = _updatedInfo.description;
+    _product.image =  _updatedInfo.image;
+    _product.thumbnail =  _updatedInfo.thumbnail;
+    //this should update the old Product struct stored on the block chain with what they inputed in the paramaters and leaves the fields that need to stay the same, the same. 
+    emit ProductUpdated(_productID, msg.sender, _updatedInfo.name, _updatedInfo.price, _updatedInfo.forSale, _updatedInfo.description, _updatedInfo.image, _updatedInfo.thumbnail);
+    return "Listing Updated";
+  }
 }
